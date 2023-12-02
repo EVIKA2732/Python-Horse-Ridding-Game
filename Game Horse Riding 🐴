@@ -1,0 +1,118 @@
+import pygame
+import random
+import sys
+
+# Initialisation de Pygame
+pygame.init()
+
+# Dimensions de la fenêtre
+WIDTH, HEIGHT = 1200, 600
+win = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Course de chevaux")
+
+# Couleurs
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+
+# Classe pour représenter un cheval
+class Horse:
+    def __init__(self, x, y, name):
+        self.name = name
+        self.x = x
+        self.y = y
+        self.velocity = random.randint(1, 5)
+        self.finished = False
+
+    def move(self):
+        if not self.finished:
+            self.x += self.velocity
+            if self.x >= WIDTH - 100:
+                self.finished = True
+
+    def reset(self):
+        self.x = 50
+        self.finished = False
+
+    def draw(self):
+        pygame.draw.rect(win, RED if not self.finished else GREEN, (self.x, self.y, 100, 30))
+        font = pygame.font.Font(None, 36)
+        text = font.render(self.name, True, (0, 0, 0))
+        win.blit(text, (self.x, self.y - 40))
+
+# Noms des chevaux
+horse_names = ["The Drill", "Sleepy", "Malik", "Tomorrow"]
+
+# Création des chevaux
+horses = [Horse(50, 50 + i * 100, name) for i, name in enumerate(horse_names)]
+
+# Score
+score = 0
+
+# Gagnant précédent
+previous_winner = None
+
+# État du jeu
+GAME_START = False
+
+# Boucle principale du jeu
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+            break
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                if not GAME_START:
+                    # Commencer la course
+                    for horse in horses:
+                        horse.reset()
+                    GAME_START = True
+                elif previous_winner:
+                    # Relancer le jeu
+                    previous_winner.reset()
+                    previous_winner = None
+                    GAME_START = False
+            elif GAME_START and event.key in [pygame.K_d, pygame.K_s, pygame.K_k, pygame.K_r]:
+                # Accélérer le cheval en appuyant sur la première lettre de son nom
+                first_letter = event.unicode.lower()
+                for horse in horses:
+                    if horse.name.lower().startswith(first_letter):
+                        horse.velocity += 1
+
+    if GAME_START:
+        # Mise à jour de la position des chevaux
+        for horse in horses:
+            horse.move()
+
+        # Vérifier s'il y a un gagnant
+        winners = [horse for horse in horses if horse.finished]
+        if winners:
+            winner = min(winners, key=lambda horse: horse.x)
+            if previous_winner != winner:
+                # Mettre à jour le score
+                previous_winner = winner
+                score += 1
+
+    # Effacer l'écran
+    win.fill(WHITE)
+
+    # Dessiner les chevaux
+    for horse in horses:
+        horse.draw()
+
+    # Afficher le score
+    font = pygame.font.Font(None, 36)
+    text = font.render("Score: " + str(score), True, (0, 0, 0))
+    win.blit(text, (10, 10))
+
+    # Mettre à jour l'affichage
+    pygame.display.update()
+
+    # Limiter le taux de rafraîchissement
+    pygame.time.delay(10)
+
+# Quitter Pygame
+pygame.quit()
+sys.exit()
